@@ -1,4 +1,7 @@
-"""Locate the kit and the consuming port; load the port's per-game modules."""
+"""Locate the kit and the consuming port; load the port's per-game modules.
+
+CLI (for shell scripts and Makefiles): kitpath.py <module> <NAME> prints
+port_value(port_module(module), NAME), or exits naming what is missing."""
 import importlib.util
 import os
 from pathlib import Path
@@ -30,3 +33,10 @@ def port_value(module, name):
     if not hasattr(module, name):
         raise SystemExit(f"{module.__file__}: {name} is required")
     return getattr(module, name)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) != 3:
+        raise SystemExit("usage: kitpath.py <module> <NAME>")
+    print(port_value(port_module(sys.argv[1]), sys.argv[2]))

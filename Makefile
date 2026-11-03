@@ -8,3 +8,8 @@ test:
 	python3 scripts/test_patchgen.py
 	python3 scripts/test_eeprom_game_diff.py
 	python3 scripts/test_gdemu_deploy.py
+	python3 scripts/test_carve_ram_snapshot.py
+	python3 scripts/test_check_stream_crc.py
+	python3 scripts/test_parse_cartlog.py
+	python3 scripts/test_parse_shimtime.py
+	python3 scripts/test_scan_dat_constants.py

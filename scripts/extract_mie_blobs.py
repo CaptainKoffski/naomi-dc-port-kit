@@ -236,8 +236,7 @@ def main():
     log = argv[0]
     if not os.path.exists(log):
         sys.exit(f"{log} missing (captures/ is gitignored -- recapture with "
-                 f"scripts/capture_leg.sh on the Naomi profile, "
-                 f"docs/kb/tooling.md §Phase 2 capture harness)")
+                 f"kit/scripts/capture_leg.sh on the Naomi profile)")
     classes, seen = harvest(log)
 
     blobs = {}
