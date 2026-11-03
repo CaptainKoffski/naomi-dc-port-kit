@@ -37,7 +37,11 @@ baseline. `scripts/gate_hashes.sh check gd` (`shim.bin`, `shim.map`,
 `mie_blobs.c`, `patch_table.h`, `1ST_READ.BIN`, four tracks, `disc.gdi`) and
 `check cd` (the `CDI=1` `shim.bin` + `1ST_READ.BIN`) are silent; senkosp's
 `make test` and this kit's `make test` pass; `make cdi` masters (its hash
-varies with the mkisofs volume dates, informational).
+varies with the mkisofs volume dates, informational). Fresh clone: senkosp
+`kit-extraction` cloned from GitHub, `git submodule update --init` fetched
+this kit from github.com/CaptainKoffski/naomi-dc-port-kit at the pin
+(`624250e`), gitignored inputs symlinked: `check gd` and `check cd` silent
+(senkosp tooling.md §Fresh clone from GitHub).
 
 ## Consumers
 

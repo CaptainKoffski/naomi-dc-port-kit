@@ -264,4 +264,7 @@ four tracks and `disc.gdi`, and the `CDI=1` `shim.bin` + `1ST_READ.BIN`,
 against senkosp `docs/kb/kit-gate-baseline.txt`), and senkosp's
 `make test` and the kit's `make test` green. Result of this extraction
 (2026-11-03, senkosp `docs/kb/tooling.md` §Kit extraction gate — result):
-every gate hash identical to the `afab584` baseline.
+every gate hash identical to the `afab584` baseline, both in the working
+checkout and in a fresh clone of senkosp `kit-extraction` from GitHub whose
+`git submodule update --init` fetched this kit from GitHub at the pinned
+commit (`check gd` and `check cd` silent).
