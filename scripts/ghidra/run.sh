@@ -3,6 +3,7 @@
 # Run from the port root (or set PORT_ROOT). Usage:
 #   kit/scripts/ghidra/run.sh import              # import tools/boot.bin + full auto-analysis
 #   kit/scripts/ghidra/run.sh script NAME.java [args...]
+#   kit/scripts/ghidra/run.sh script DisasmEntry.java <entry-hex>   # e.g. 0x + port_def.ENTRY_PC
 # Scripts are found in the kit's scripts/ghidra and the port's scripts/ghidra.
 # Project name: $GHIDRA_PROJECT, else port_def.GHIDRA_PROJECT (required).
 # ROM content: tools/boot.bin and tools/ghidra-proj are gitignored (/tools/). Never commit.
