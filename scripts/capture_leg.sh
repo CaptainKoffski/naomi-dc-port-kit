@@ -17,5 +17,6 @@ mkdir -p "$(dirname "$log")"
 defaults write com.flyinghead.Flycast ApplePersistenceIgnoreState -bool YES
 export FLYCAST_HEADLESS="${FLYCAST_HEADLESS:-1}"   # the fork never shows a window unless asked
 # exec: caller's $! is Flycast's PID -- kill that, never by name (other projects run Flycast too)
+# pvr.rend=0: a leftover pvr.rend = 4 (Vulkan) in emu.cfg segfaults the fork bundle (no MoltenVK), docs/kb/tooling.md §Headless launch rule
 FLYCAST_ENTRYPC="$FLYCAST_ENTRYPC" FLYCAST_CARTLOG="$log" \
-    exec "$bin" -config config:rend.vsync=no "$rom"
+    exec "$bin" -config config:rend.vsync=no -config config:pvr.rend=0 "$rom"

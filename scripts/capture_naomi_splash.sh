@@ -18,8 +18,9 @@ rm -f naomi_boot_s*.png "$PNG"
 FPID=
 for try in 1 2 3 4; do
   [ -n "$FPID" ] && { kill -9 "$FPID" 2>/dev/null; sleep 10; }
+  # pvr.rend=0: a leftover pvr.rend = 4 (Vulkan) in emu.cfg segfaults the fork bundle (no MoltenVK), docs/kb/tooling.md §Headless launch rule
   FLYCAST_SHOT="$PNG" FLYCAST_SHOT_EVERY=15 \
-    "$BIN" "$ROM" -config config:rend.vsync=no > "$LOG" 2>&1 &
+    "$BIN" "$ROM" -config config:rend.vsync=no -config config:pvr.rend=0 > "$LOG" 2>&1 &
   FPID=$!
   sleep 8
   grep -q "Verify Failed" "$LOG" && { echo "try$try flake"; continue; }

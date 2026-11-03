@@ -116,7 +116,8 @@ bios_data.o: ../build/bios_data.bin
 # Boot splash: the real Naomi BIOS logo frame (BIOS property, not game
 # content -- same epr-21576h.ic27 Cleopatra captured it from, reused as-is).
 # splash.png is gitignored (BIOS-rendered output, same category as the BIOS
-# ROM) -- regenerate with scripts/capture_naomi_splash.sh if ever missing.
+# ROM) -- regenerate with kit/scripts/capture_naomi_splash.sh <the port's .dat>
+# if ever missing.
 # sips is stock macOS; converter is stdlib-only.
 ../build/splash.bin: splash.png $(KIT)/scripts/bmp2rgb565.py
 	mkdir -p ../build
@@ -129,7 +130,8 @@ splash_blob.o: ../build/splash.bin
 	  $< $@
 # T9 pre-game menu: sprite sheet (settings screen) + the two controls
 # pages, all our
-# own generated art (scripts/gen_menu_assets.py from scripts/menu_def.py --
+# own generated art (kit/scripts/gen_menu_assets.py from the port's
+# scripts/menu_def.py --
 # copyright rule, CLAUDE.md). The sheet is an 8bpp palettized blob written
 # by the generator (menu_sheet.pal8: 256 x RGB565-LE palette then indices,
 # the logo_strip.pal8 layout) and objcopied straight in; the controls pages
@@ -159,7 +161,7 @@ ctl_stick_blob.o: ../build/ctl_stick.bin
 	  --redefine-sym _binary____build_ctl_stick_bin_start=_ctl_stick_bin \
 	  --redefine-sym _binary____build_ctl_stick_bin_end=_ctl_stick_bin_end \
 	  $< $@
-# Top-menu logo, already palettized+RGB565 by scripts/gen_menu_assets.py
+# Top-menu logo, already palettized+RGB565 by kit/scripts/gen_menu_assets.py
 # (blob format: menu.c draw_logo comment) -- objcopy only, no conversion
 # step. Gitignored (official game logo art, branded -- copyright rule,
 # CLAUDE.md); regenerate with gen_menu_assets.py, which needs the gitignored

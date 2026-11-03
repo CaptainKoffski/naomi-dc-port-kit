@@ -6,6 +6,12 @@ submodule at `kit/`.
 
 - **Spec:** `docs/superpowers/specs/2026-11-03-port-kit-extraction-design.md`
 - **Plan:** `docs/superpowers/plans/2026-11-03-port-kit-extraction.md`
+- **Contract** (what a port supplies): `README.md`. **Tool pins:**
+  `docs/kb/tooling.md`. **Status:** `docs/kb/00-status.md`.
+- **Citations:** unqualified citations in kit sources (`docs/kb/...`,
+  `task-N-brief.md`, phase documents, `loader/main.c`, `shims/src/main.c`)
+  refer to the reference port's tree, `../senkosp2dreamcast` at commit
+  `afab584`, the base the kit was extracted from.
 
 Rules:
 - Every hardware/behavioral claim carries a citation; primary sources

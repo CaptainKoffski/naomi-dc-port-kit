@@ -64,7 +64,8 @@ if [ "$MODE" = play ]; then
     echo "Play as long as you like; quit Flycast when done."
     "$BIN" $CFG "$DISC" || true
 else
-    "$BIN" $CFG "$DISC" &
+    # pvr.rend=0: a leftover pvr.rend = 4 (Vulkan) in emu.cfg segfaults the fork bundle (no MoltenVK), docs/kb/tooling.md §Headless launch rule
+    "$BIN" $CFG -config config:pvr.rend=0 "$DISC" &
     PID=$!
     echo "Attract run ${SECS}s (PID $PID)..."
     sleep "$SECS"
