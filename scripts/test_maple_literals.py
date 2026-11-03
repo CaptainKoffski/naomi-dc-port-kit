@@ -10,7 +10,7 @@ byte source on the disc (run from the port root, or set PORT_ROOT):
     ROM/BIOS-library bytes): every literal must be classified -- the cart's
     in the port's scripts/maple_allowlist.py (CART_MAPLE_PATCHED,
     CART_TRAP_TABLE, CART_STREAMED_NOISE: one justification per bucket),
-    bios_data.bin's in BIOS_DATA_BASELINE below. A NEW or GONE literal
+    bios_data.bin's in its BIOS_DATA_BASELINE. A NEW or GONE literal
     fails `make test`; classify it (patch or prove dead -- kit/scripts/ghidra
     FindMmioXrefs.java gives xrefs) before touching the allow-list.
   - loader/main.o + handoff.o (the port's loader objects): zero vmu/maple
@@ -41,17 +41,7 @@ CART_BASELINE = (kitpath.port_value(_al, "CART_MAPLE_PATCHED")
                  | kitpath.port_value(_al, "CART_TRAP_TABLE")
                  | kitpath.port_value(_al, "CART_STREAMED_NOISE"))
 
-# bios_data.bin's one hit (Naomi BIOS ROM 0x60000-0x67000 library blob,
-# offset 0x14d4 = ROM offset 0x614d4): same byte signature (repeating
-# `XX 5f a0 00000000` runs) immediately preceding it as a game boot image's
-# ADDRESS-CHECKER-TRAP table (the CART_TRAP_TABLE bucket of the first port's
-# maple_allowlist.py) -- high-confidence same Sega
-# SDK table, shared low-level library code Sega links into both the BIOS
-# ROM and the game image. NOT Ghidra-xref-confirmed (this project's Ghidra
-# DB covers the boot image only, not the raw BIOS ROM blob) -- classified by
-# byte-pattern match, one confidence notch below that Ghidra-confirmed bucket, still
-# read-only-diagnostic in nature and not a maple-frame builder.
-BIOS_DATA_BASELINE = {(0x00014d4, 0xa05f6c18)}
+BIOS_DATA_BASELINE = kitpath.port_value(_al, "BIOS_DATA_BASELINE")   # bios_data.bin's classified hits
 
 # Task 10: spec Decision 1's boot combo (hold A+Start on pad 1 during boot ->
 # test image) makes the loader READ pad 1 before the handoff, which is the

@@ -5,6 +5,7 @@
 # cwd; pick the full-logo frame and copy it to loader/splash.png.
 #   capture_naomi_splash.sh <image.dat>
 ROM="${1:?usage: capture_naomi_splash.sh <image.dat>}"
+case "$ROM" in /*) ;; *) ROM="$PWD/$ROM";; esac   # Flycast rejects a relative Naomi ROM path
 PORT="${PORT_ROOT:-$PWD}"
 [ -f "$PORT/scripts/port_def.py" ] || { echo "capture_naomi_splash.sh: $PORT is not a port root (scripts/port_def.py not found; run from the port root or set PORT_ROOT)" >&2; exit 2; }
 BIN="${FLYCAST_BIN:-$PORT/../flycast4naomi2dreamcast/build/Flycast.app/Contents/MacOS/Flycast}"

@@ -22,9 +22,9 @@ versions and steps as senkosp recorded them (citations are senkosp
 |---|---|---|---|
 | sh-elf-gcc (dc-chain) | 15.2.0 (`sh-elf-gcc --version` → `sh-elf-gcc (GCC) 15.2.0`) | `/opt/toolchains/dc/sh-elf` (machine-wide) | §sh-elf / KOS toolchain below; built with KOS's toolchain builder (senkosp `README.md` §Requirements) |
 | KallistiOS | `705c862957b2f6091a6ce4784943744daecc3e2b` (v2.2.0-932) | the port's `tools/kos` (gitignored) + its `environ.sh` | §Decoupling from ../cleopatra below; `loader/rules.mk` `KOS_PIN ?= 705c8629` refuses to link any other commit |
-| KOS `utils/scramble` | the KOS pin above | `tools/kos/utils/scramble/scramble` | §CDI mastering → Installs ("already built (arm64) in the KOS checkout"; no build command was recorded) |
+| KOS `utils/scramble` | the KOS pin above | `tools/kos/utils/scramble/scramble` | `make -C tools/kos/utils/scramble` (KOS's own Makefile there: `cc -o scramble scramble.c`); needed by `kit/scripts/make_cdi.py`. senkosp's record says only "already built (arm64) in the KOS checkout" (§CDI mastering → Installs; senkosp tooling.md:2717) |
 | mkdcdisc | `2b98b0d` (`2b98b0d9480e364e3517355648fbc3b49fb19882`, v0.0.4, 2026-09-20) | the port's `tools/mkdcdisc/build/mkdcdisc` | `git clone https://gitlab.com/simulant/mkdcdisc.git tools/mkdcdisc && git -C tools/mkdcdisc checkout 2b98b0d && (cd tools/mkdcdisc && meson setup build && ninja -C build)`; check: `git -C tools/mkdcdisc rev-parse --short HEAD` → `2b98b0d`. Deps Homebrew `meson`, `ninja`, `libisofs`. Build command and deps from senkosp tooling.md:2926-2934, whose own recipe used `git clone --depth 1` (current HEAD, not the pin; it was `2b98b0d` on 2026-09-25). Build-required for `make cdi` (:3059-3060) |
-| img4dc / cdi4dc | 0.5b, `d28df15` (2023-04-15) | the port's `tools/img4dc/build/cdi4dc/cdi4dc` | §CDI mastering → Installs |
+| img4dc / cdi4dc | 0.5b, `d28df15` (`d28df15db97db1b410e52191eeb45534dcbba252`, 2023-04-15) | the port's `tools/img4dc/build/cdi4dc/cdi4dc` | `git clone https://github.com/Kazade/img4dc tools/img4dc && git -C tools/img4dc checkout d28df15 && mkdir tools/img4dc/build && (cd tools/img4dc/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 && make cdi4dc)`; check: `git -C tools/img4dc rev-parse --short HEAD` → `d28df15`. Dep Homebrew `cmake` (4.x needs the policy flag). Build command from §CDI mastering → Installs (senkosp tooling.md:2705-2713), whose own record used a shallow clone (current HEAD, not the pin; senkosp's checkout is `d28df15`) |
 | mkisofs | 3.02a09 | Homebrew `cdrtools` | §CDI mastering → Installs |
 | 7zz | Homebrew `sevenzip` | `/opt/homebrew/bin/7zz` | donor extraction, §GDI mastering below |
 | chdman | Homebrew `rom-tools` | PATH | GD-ROM romset → `.dat` only (`../naomi2dreamcast/tools/dat-extract`; senkosp tooling.md:294) |
@@ -513,12 +513,16 @@ kit/scripts/ghidra/run.sh script DumpEntryChain.java > /tmp/entry-rerun.txt
   . tools/kos/environ.sh
   make -C tools/kos/kernel -j8 && make -C tools/kos/addons -j8
   make -C tools/kos/examples/dreamcast/hello   # test-serial payload
+  make -C tools/kos/utils/scramble             # kit addition: make_cdi.py's 1ST_READ scrambler
   ```
 
   Two caveats, both hit on first build: (1) top-level `make -C tools/kos`
   dies in `utils/` — `makeip` wants `png.h`, `vqenc` wants `jpeglib.h`
   (no Homebrew libpng/libjpeg here); the utils are NOT needed (IP.BIN
-  comes from the donor), hence kernel+addons built directly. (2)
+  comes from the donor), hence kernel+addons built directly. (Kit: one
+  util is needed after all -- `utils/scramble` for `make cdi`
+  (`kit/scripts/make_cdi.py`); its own Makefile builds it alone, `cc -o
+  scramble scramble.c`, last line of the recipe above.) (2)
   `environ_dreamcast.sh` probes unset `KOS_SUBARCH` and kills `set -u`
   shells — source from a normal shell.
 
@@ -628,6 +632,10 @@ zips (`[GDI] …` and `[CDI] Senko no Ronde Special.zip`).
   cdi4dc` (Homebrew cmake 4.x refuses the project's
   `cmake_minimum_required(3.0)` without the policy flag). Binary:
   `tools/img4dc/build/cdi4dc/cdi4dc`.
+  (Kit: install at the pin with a full clone, `git clone
+  https://github.com/Kazade/img4dc tools/img4dc && git -C tools/img4dc
+  checkout d28df15`, then the build above; check `git -C tools/img4dc
+  rev-parse --short HEAD` → `d28df15`. §Pins.)
 - **mkisofs 3.02a09** — already present (Homebrew `cdrtools 3.02a09`).
   Plain MSINFO-0 invocation only (`-iso-level 1 -V SENKOSP -G ip.bin`);
   no `-C` offsets needed for the data/data layout.

@@ -27,7 +27,6 @@ int main(void) {
     assert(SHIM_BOUNCE + 2048 <= GD_STACK_BOTTOM);                   /* bounce | GD stack */
     assert(GD_STACK_BOTTOM + 0x1000 <= GD_STACK_TOP);                /* >= 4 KB of stack */
     assert(GD_STACK_TOP == SHIM_END);                                /* shim home ends exactly at SHIM_END */
-    assert(GD_STACK_TOP == BIOS60000_DST);                           /* ... where the BIOS blob home starts */
     assert(SHIM_STATE_GD_BACKEND < 8);              /* inside SHIM_STATE u32[8] */
     assert(SHIM_STATE_LAYOUT_WORD(1, 1) < 8);        /* inside SHIM_STATE u32[8] */
     /* Loader-to-shim slot contract (loader/main.c staging): pad A/B, stick A/B. */
@@ -35,20 +34,6 @@ int main(void) {
     assert(SHIM_STATE_LAYOUT_WORD(1, 0) == 5 && SHIM_STATE_LAYOUT_WORD(1, 1) == 6);
     assert(GD_STACK_TOP - GD_STACK_BOTTOM == 0x2000);
     assert(GD_STACK_CANARY != 0);                   /* staging memset is zero */
-
-    /* Loader-placed BIOS-derived blocks: outside shim home, disjoint from it
-     * and from each other (KERNEL-SLICE pin, docs/kb/phase4-conversion.md). */
-    assert(KERNEL_DST + KERNEL_TOTAL_LEN <= SHIM_BASE);              /* kernel slice | shim home */
-    assert(KERNEL_A_LEN + KERNEL_B_LEN + KERNEL_C_LEN == KERNEL_TOTAL_LEN);
-
-    /* bios_data.bin layout: blob then the three kernel pieces, concatenated,
-     * offsets computed (not independently duplicated) so a length edit can't
-     * silently desync loader and Makefile. */
-    assert(BIOS_DATA_60000_OFF == 0u);
-    assert(BIOS_DATA_KERNEL_A_OFF == BIOS60000_LEN);
-    assert(BIOS_DATA_KERNEL_B_OFF == BIOS_DATA_KERNEL_A_OFF + KERNEL_A_LEN);
-    assert(BIOS_DATA_KERNEL_C_OFF == BIOS_DATA_KERNEL_B_OFF + KERNEL_B_LEN);
-    assert(BIOS_DATA_TOTAL == BIOS60000_LEN + KERNEL_TOTAL_LEN);
 
     printf("shim_iface host self-test: OK (incl. region map)\n");
     return 0;

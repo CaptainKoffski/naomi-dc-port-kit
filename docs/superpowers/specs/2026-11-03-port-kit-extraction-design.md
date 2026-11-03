@@ -203,6 +203,12 @@ zips (they carry timestamps).
    `main`, push both, mark the kit shipped in ausfache's
    `docs/kb/00-status.md` (Phase 2 may start).
 
+*Addendum (final review, M8):* `disc.cdi` differs between clean builds in the
+mkisofs volume dates and their EDC/ECC (ISO sectors 16–23; 168 bytes in the
+Task 1 control, 244 in Task 7's, 192 in the final review's `cmp`), so the CDI
+gate is the `cd` pair (`shim.bin` + `1ST_READ.BIN` built with `CDI=1`) and the
+`cdi` hash is informational.
+
 ## 6. The contract: what a port supplies (the game layer)
 
 The kit's README lists these, each with the senkosp file as the example.

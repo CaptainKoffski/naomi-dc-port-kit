@@ -33,20 +33,30 @@ knobs. Example: senkosp `shims/include/shim_iface.h`.
 
 The kit's C and assembler files (`shims/src/*.c`, `shims/src/*.S`,
 `loader/*.c`, `loader/*.S`, `loader/*.h`) use exactly these names from it
-(`grep -hoE '\b[A-Z][A-Z0-9_]{2,}\b'` over those files, `comm -12` with the
+(identifiers outside comments: strip `/* */`, `//` and the `.S` files' `!`
+comments, then `grep -hoE '\b[A-Z][A-Z0-9_]{2,}\b'` and `comm -12` with the
 `#define` names in senkosp's header):
 
-`CART_FAD`, `CART_SIZE`, `GAME_LOAD_ADDR`, `GD_STACK_BOTTOM`, `GD_STACK_CANARY`, `GD_STACK_TOP`, `KERNEL_DST`, `KERNEL_TOTAL_LEN`, `MAPLE_RX`, `MAPLE_TX`, `P2ADDR`, `PF_HEAP_BASE_NEW`, `PF_HEAP_BASE_WORD`, `PF_RING_BASE`, `PF_RING_SZ`, `SHIM_BASE`, `SHIM_BOUNCE`, `SHIM_ERR`, `SHIM_GD_DIAG`, `SHIM_PF_VERIFY`, `SHIM_PREFETCH`, `SHIM_STATE`, `SHIM_STATE_GD_BACKEND`, `SHIM_STATE_LAYOUT_VALID`, `SHIM_STATE_LAYOUT_WORD`, `STAGING_ADDR`.
+`CART_FAD`, `CART_SIZE`, `GD_STACK_BOTTOM`, `GD_STACK_CANARY`, `GD_STACK_TOP`, `MAPLE_RX`, `MAPLE_TX`, `P2ADDR`, `PF_HEAP_BASE_NEW`, `PF_HEAP_BASE_WORD`, `PF_RING_BASE`, `PF_RING_SZ`, `SHIM_BOUNCE`, `SHIM_ERR`, `SHIM_GD_DIAG`, `SHIM_PF_VERIFY`, `SHIM_PREFETCH`, `SHIM_STATE`, `SHIM_STATE_GD_BACKEND`.
 
 The kit host tests that run with the port's header (`shims/test/test_shim_iface.c`,
 `shims/test/test_gd_math.c`, run by `shims/rules.mk` `shim-tests`) also need
-`BIOS60000_DST`, `BIOS60000_LEN`, `BIOS_DATA_60000_OFF`,
-`BIOS_DATA_KERNEL_A_OFF`, `BIOS_DATA_KERNEL_B_OFF`, `BIOS_DATA_KERNEL_C_OFF`,
-`BIOS_DATA_TOTAL`, `G1_MIRROR`, `KERNEL_A_LEN`, `KERNEL_B_LEN`,
-`KERNEL_C_LEN`, `MAPLE_MIRROR`, `MAPLE_MIRROR_LEN`, `SHIM_CODE_MAX`,
-`SHIM_END`. `kit/scripts/make_gdi.py` and `make_cdi.py` read `CART_FAD`,
-`CART_SIZE`, `LOADER_FAD` and `LOADER_SECS` from the header text and
-cross-check them.
+`G1_MIRROR`, `MAPLE_MIRROR`, `MAPLE_MIRROR_LEN`, `SHIM_BASE`,
+`SHIM_CODE_MAX`, `SHIM_END`, `SHIM_STATE_LAYOUT_WORD`. Asserts on the
+BIOS-blob structure (`BIOS60000_*`, `KERNEL_*`, `BIOS_DATA_*_OFF`) are the
+port's, next to its `bios_data.bin` rule (§3; senkosp
+`shims/test/test_game_values.c`).
+
+Header text the kit scripts parse (keep these forms):
+
+- `kit/scripts/patchgen.py`: `SHIM_BASE`, `TEST_DAT_OFF`, `GAME_LOAD_ADDR`
+  as plain hex `#define`s (`#define NAME 0x...`); `G1_MIRROR`,
+  `MAPLE_MIRROR` as `#define NAME (SHIM_BASE + 0xNNNN)`.
+- `kit/scripts/make_gdi.py`: `CART_FAD` (decimal) and `CART_SIZE` (hex),
+  cross-checked against its track layout and `port_def.CART_SIZE`.
+- `kit/scripts/gen_mie_blobs.py`: `CART_SIZE` (hex).
+- `kit/scripts/make_cdi.py`: `LOADER_SECS` (decimal) and the
+  `#elif CART_FAD == 15372` arm followed by `#define LOADER_FAD 13644`.
 
 ### 2. Shim game files and `shims/Makefile`
 
@@ -78,7 +88,8 @@ cross-check them.
   `cc -DHOST_TEST -Iinclude -I$(KIT)/shims/src -Isrc`),
   `test/test_ctl_lib.c` (with `$(KIT)/loader/ctl_lib.c`,
   `-I$(KIT)/loader -I../loader`) and `test/test_game_values.c` (the port's
-  value asserts, split out of the kit's host tests). Example: senkosp
+  value asserts, split out of the kit's host tests, and its BIOS-blob
+  structure asserts). Example: senkosp
   `shims/Makefile`, `shims/test/`.
 
 ### 3. Loader game files and `loader/Makefile`
@@ -91,8 +102,9 @@ cross-check them.
   `loader/logo_strip.pal8`.
 - `loader/Makefile` (senkosp's): `KIT ?= $(abspath ../kit)`, `DAT`, the
   ordered `OBJS`, `BIOS`, the `CFLAGS` additions, then
-  `include $(KIT)/loader/rules.mk`, then the header prerequisites of
-  `main.o` and the port's inputs of the patch-table generator:
+  `include $(KIT)/loader/rules.mk`, then the `../build/bios_data.bin` rule,
+  the header prerequisites of `main.o` and the port's inputs of the
+  patch-table generator:
 
   ```make
   OBJS = main.o handoff.o gd.o gd_sys.o shim_blob.o bios_data.o splash_blob.o naomi_crc.o \
@@ -101,6 +113,7 @@ cross-check them.
   CFLAGS += $(DEFS)
   BIOS = ../bios/naomi/epr-21576h.ic27
   include $(KIT)/loader/rules.mk
+  # ../build/bios_data.bin: its constants and dd recipe (below)
   main.o: $(KIT)/loader/menu.h $(KIT)/loader/ctl_lib.h menu_layout.h ../build/patch_table.h ../shims/include/shim_iface.h
   ../build/patch_table.h: ../scripts/reloc_patchset.json
   ../build/patch_table.h: ../scripts/port_def.py
@@ -109,7 +122,16 @@ cross-check them.
   `loader/rules.mk` builds every object in that list except `main.o`
   (KOS's pattern rule) and refuses to link unless
   `git -C $(KOS_BASE) rev-parse HEAD` starts with `KOS_PIN` (default
-  `705c8629`, `docs/kb/tooling.md` §Pins).
+  `705c8629`, `docs/kb/tooling.md` §Pins; an empty `KOS_PIN` is an error).
+- `../build/bios_data.bin` — the BIOS-derived bytes the loader places
+  (`bios_data.o`, embedded by `loader/rules.mk`). The composition is per
+  game, so the port's `loader/Makefile` owns the rule and its constants,
+  and its `shim_iface.h` `BIOS_DATA_*_OFF` names document the layout.
+  Two worked examples: senkosp `loader/Makefile` (Naomi BIOS 0x7000 @0x60000
+  + kernel pieces A/B/C from the BIOS and `tools/ram-snapshot.bin`, 0xa200
+  bytes) and Cleopatra `../cleopatra/loader/Makefile:35-45`
+  (0x7000 @0x60000 + 0x70 @0x1ffd00). `.DELETE_ON_ERROR:` is the kit's, so
+  a failing size check leaves no short blob.
 
 ### 4. Top-level `Makefile`
 
@@ -121,6 +143,7 @@ PORT_DEF = PORT_ROOT=$(CURDIR) python3 kit/scripts/kitpath.py port_def
 DAT := $(shell $(PORT_DEF) DAT)
 GAMEDIR := $(shell $(PORT_DEF) GAME_NAME)
 CDI_FILE := $(shell $(PORT_DEF) CDI_FILE)
+$(if $(and $(DAT),$(GAMEDIR),$(CDI_FILE)),,$(error port_def.py values missing -- see the kitpath message above))
 export KIT DAT
 export PORT_ROOT := $(CURDIR)
 CD_CART_FAD = 15372
@@ -174,12 +197,14 @@ Kit scripts load these with `kit/scripts/kitpath.py` (`port_module`,
 | `CART_SIZE` | `make_gdi.py` (asserts `len(DAT)`, cross-checks `shim_iface.h`) |
 | `IP_PRODUCT`, `IP_VERSION`, `IP_DATE`, `IP_COMPANY` | `make_gdi.py` IP.BIN branding (0x40, 0x4a, 0x50, 0x70); `make_cdi.py` (mkdcdisc IP) |
 | `IP_TITLE` | IP.BIN 0x80 (`make_gdi.py`, `make_cdi.py`); `make_preset.py` (preset title, README heading) |
+| `ISOLDR_MEMORY` | `make_preset.py`: DreamShell isoldr preset `memory` and the README's manual "Boot memory" (hex string without `0x`; senkosp `"8cff0000"`) |
+| `ISOLDR_HEAP` | `make_preset.py`: isoldr preset `heap` and the README's manual "Heap memory" (hex string without `0x`; senkosp `"8cff7a00"`) |
 | `CDI_FILE` | top Makefile (CDI release zip); `make_cdi.py` (burn README) |
 | `ISO_VOLUME` | `make_cdi.py` (`mkisofs -V`) |
 | `TEXPATCH` | `make_gdi.py`/`make_cdi.py`: `True` splices `build/texpatch/` into the cart image |
 | `PATCH_PREFIX` | the port's `build_patch_table.py` → `Gen.emit(prefix)`: array names in `build/patch_table.h` |
 | `GHIDRA_PROJECT` | `scripts/ghidra/run.sh` (unless `$GHIDRA_PROJECT` is set) |
-| `ENTRY_PC` | `capture_leg.sh` → `FLYCAST_ENTRYPC` (unless exported); hex without `0x` |
+| `ENTRY_PC` | `capture_leg.sh` → `FLYCAST_ENTRYPC` (unless exported); 8 hex digits as a string, without `0x` (the script refuses anything else) |
 | `STREAM_FLOOR` | `test_maple_literals.py` (end of the cart boot region) |
 | `RAM_BANNER_OFF`, `RAM_GDFS_OFF`, `RAM_HEAP_LO`, `RAM_HEAP_HI` | `carve_ram_snapshot.py` control tests |
 | `MIE_ORACLE_LOG` (optional) | `test_gen_mie_blobs.py` oracle capture (absent: SKIP) |
@@ -189,12 +214,19 @@ Kit scripts load these with `kit/scripts/kitpath.py` (`port_module`,
   `SHEET_W`, `SHEET_H`, `PAD_BUTTONS`, `STICK_BUTTONS`, `PAD_LAYOUTS`,
   `STICK_LAYOUTS`, `FUNC_JVS`, `FUNC_WORDS`, `CTL_CLASSES`, `CTL_PORTS`,
   `CTL_ROW_ITEMS`, `CTL_FOOTERS`, `CTL_N_CUSTOM`, `CTL_CUSTOM_NAMES`,
-  `CTL_DELETE_CELL`, `CUSTOM_DEMO` (and the page layout values it names);
+  `CTL_DELETE_CELL`, `CUSTOM_DEMO` (and the anchors `CTL_CLASSES` names),
+  and the look (its `LOOK` tuple): `FONT_PATH`, `F_TOP_PT`, `F_ROW_PT`,
+  `F_TITLE_PT`, the colours `BG`, `FG`, `BLACK`, `AMBER`, `GREY`, `RED`,
+  `WHITE`, the layout numbers `CHIP_W`, `CHIP_H`, `LOGO_W`, `LOGO_H`,
+  `LOGO_X`, `LOGO_Y`, `CTL_ROW_LABEL_X`, `CTL_ROW_VALUE_X`, `CTL_FOOTER_Y`,
+  `TEXT_GAP`, the label columns `COL_L`, `COL_R`, `SCOL_R`, and the
+  controls-page art boxes and leader routes `PAD_PAGE`, `STICK_PAGE`;
   `gen_mie_blobs.py` reads `DEFAULT_RECORD` and `SYSTEM_COIN_SETTING`.
   Rerun `python3 kit/scripts/gen_menu_assets.py` after any edit and commit
   its outputs. Example: senkosp `scripts/menu_def.py`.
-- `scripts/maple_allowlist.py` — the cart's classified Maple-register
-  literals: `CART_MAPLE_PATCHED`, `CART_TRAP_TABLE`, `CART_STREAMED_NOISE`
+- `scripts/maple_allowlist.py` — the classified Maple-register literals:
+  the cart's `CART_MAPLE_PATCHED`, `CART_TRAP_TABLE`, `CART_STREAMED_NOISE`,
+  and `build/bios_data.bin`'s `BIOS_DATA_BASELINE`
   (`kit/scripts/test_maple_literals.py`).
 - `scripts/reloc_patchset.json` — the relocation words (single source; read
   by the port's `build_patch_table.py` through `patchgen.Gen(reloc=...)`).
@@ -209,8 +241,7 @@ Kit scripts load these with `kit/scripts/kitpath.py` (`port_module`,
 
 ### 6. Kit scripts: run from the port root (or set `PORT_ROOT`)
 
-Required arguments (ROM paths absolute — Flycast rejects a relative one,
-`docs/kb/tooling.md` §Instrumented Flycast):
+Required arguments:
 
 - `kit/scripts/capture_leg.sh <leg> <rom>`
 - `kit/scripts/capture_dc_leg.sh <leg> [gdi]` (default `build/disc.gdi`)
@@ -244,16 +275,17 @@ logo). For `make cdi` also `tools/img4dc` and `tools/mkdcdisc`
 
 - Byte-pinned kit files still carry the reference port's name in comments:
   `shims/src/jvs.c`, `loader/handoff.S`, `scripts/cdi-bisect/hello.c`,
-  `scripts/ghidra/Decomp.java`, `WhichFuncArgs.java`, `DisasmRange.java:2`;
-  and `jvs.c` uses senkosp's `JVS_M`-style button names. Renaming them is a
-  later, gated clean-up (spec §11).
-- Kit constants proven on senkosp's hardware that a new port must confirm
-  on its own hardware round: `scripts/make_preset.py`'s DreamShell `heap`
-  and `memory` pins, and `scripts/test_maple_literals.py`'s
-  `BIOS_DATA_BASELINE` (the Maple literal in the BIOS slice). A port
-  cannot extend that baseline without a kit change.
+  `scripts/ghidra/Decomp.java`, `WhichFuncArgs.java`; `DisasmRange.java:2`
+  carries its entry value (`0x8c021000`, senkosp's) in a usage comment; and `jvs.c`
+  uses senkosp's `JVS_M`-style button names. Renaming them is a later,
+  gated clean-up (spec §11).
+- The DreamShell isoldr preset pins (`port_def.ISOLDR_MEMORY`,
+  `ISOLDR_HEAP`) and the BIOS-slice Maple literals
+  (`maple_allowlist.BIOS_DATA_BASELINE`) are set by the port; senkosp's
+  were proven on its hardware.
 - The Maple tripwire exits non-zero on any unclassified literal: a new port
-  is red until it classifies its cart's literals in `maple_allowlist.py`.
+  is red until it classifies its cart's and `bios_data.bin`'s literals in
+  `maple_allowlist.py`.
 
 ## The gate
 

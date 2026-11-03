@@ -8,6 +8,12 @@ bios/
 *.gdi
 *.iso
 *.chd
+*.zip
+*.cdi
+*.raw
+*.bin
+*.pvr
+*.mr
 __pycache__/
 .DS_Store
 ._*

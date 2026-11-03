@@ -14,8 +14,8 @@ game with ISO Loader defaults untouched; without it, default placement
 0x8c004000 is measured-fatal (docs/kb/phase7-polishing.md §T1 hardware
 round) and the loader's preset_note() screen explains the fix.
 
-Values below = the T1-proven pinned preset (memory/heap,
-docs/kb/tooling.md §Phase 7 preset recipe) + the 4.0.4 GUI defaults the
+Values below = the port's T1-proven pinned preset (port_def ISOLDR_MEMORY /
+ISOLDR_HEAP; senkosp: docs/kb/tooling.md §Phase 7 preset recipe) + the 4.0.4 GUI defaults the
 operator's hardware round saved (async=8 / OS auto / mode 0: app.xml
 checked= states; save format: preset.c:433 isoldr_save_preset).  `sd` dev
 prefix only -- the heap pin is sized against the measured `sd` blob; an
@@ -38,6 +38,8 @@ os.chdir(port)
 _pd = kitpath.port_module("port_def")
 GAME_NAME = kitpath.port_value(_pd, "GAME_NAME")   # release folder name, README.txt
 IP_TITLE = kitpath.port_value(_pd, "IP_TITLE")     # preset title, README.txt heading
+ISOLDR_MEMORY = kitpath.port_value(_pd, "ISOLDR_MEMORY")   # isoldr boot memory, hex without 0x
+ISOLDR_HEAP = kitpath.port_value(_pd, "ISOLDR_HEAP")       # isoldr heap, hex without 0x
 
 TRACK03 = pathlib.Path("build/track03.iso")
 OUT_ROOT = pathlib.Path("build/release-extras")
@@ -50,11 +52,11 @@ async = 8
 cdda = 00000000
 irq = 0
 low = 0
-heap = 8cff7a00
+heap = {ISOLDR_HEAP}
 fastboot = 0
 type = 0
 mode = 0
-memory = 8cff0000
+memory = {ISOLDR_MEMORY}
 vmu = 0
 scrhotkey = 0
 altread = 0
@@ -86,7 +88,7 @@ DreamShell (SD card on the serial port):
 
   If you skip step 2 the game shows a blue screen with these same
   instructions instead of starting.  (Manual alternative: in ISO Loader
-  set Boot memory to 0x8cff0000 and Heap memory to 0x8cff7a00.)
+  set Boot memory to 0x{ISOLDR_MEMORY} and Heap memory to 0x{ISOLDR_HEAP}.)
 
   Tested with DreamShell 4.0.4 / ISO Loader firmware "sd".
 """

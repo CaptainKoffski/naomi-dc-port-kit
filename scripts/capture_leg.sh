@@ -4,12 +4,14 @@
 set -euo pipefail
 leg="${1:?usage: capture_leg.sh <leg-name> <rom-path>}"
 rom="${2:?usage: capture_leg.sh <leg-name> <rom-path>}"
+case "$rom" in /*) ;; *) rom="$PWD/$rom";; esac   # Flycast rejects a relative Naomi ROM path
 kit="$(cd "$(dirname "$0")/.." && pwd)"
 port="${PORT_ROOT:-$PWD}"
 [ -f "$port/scripts/port_def.py" ] || { echo "capture_leg.sh: $port is not a port root (scripts/port_def.py not found; run from the port root or set PORT_ROOT)" >&2; exit 2; }
 bin="${FLYCAST_BIN:-$port/../flycast4naomi2dreamcast/build/Flycast.app/Contents/MacOS/Flycast}"
 # the game's boot entry (port_def.ENTRY_PC) arms the BIOSEXEC watch; an exported override wins (canary use)
 FLYCAST_ENTRYPC="${FLYCAST_ENTRYPC:-$(python3 "$kit/scripts/kitpath.py" port_def ENTRY_PC)}"
+case "$FLYCAST_ENTRYPC" in [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) ;; *) echo "capture_leg.sh: FLYCAST_ENTRYPC/port_def.ENTRY_PC must be 8 hex digits as a string (the fork parses it with strtoul base 16), got '$FLYCAST_ENTRYPC'" >&2; exit 2;; esac
 log="$port/captures/$leg.log"
 mkdir -p "$(dirname "$log")"
 # ponytail: legs are primary data — never clobber; rename/delete a bad leg by hand

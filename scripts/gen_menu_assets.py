@@ -7,8 +7,8 @@ emits loader/menu_layout.h (sheet rects + dest coordinates + the settings byte
 tables) and shims/src/layouts.h (button->JVS tables), both from menu_def.py.
 
 All art is drawn here (text + flat shapes) or derived from the operator's own
-controller diagrams (vector-traced, see PAD_PAGE comment) -- never pixels
-from the game (copyright rule, CLAUDE.md).
+controller diagrams (vector-traced, see the port's menu_def.py PAD_PAGE
+comment) -- never pixels from the game (copyright rule, CLAUDE.md).
 Rerun after any menu_def.py change, then VIEW build/preview_*.png: those
 composite the label chips onto the pages exactly as the C code blits them, and
 are the only check that an anchor actually lands beside its button.
@@ -23,29 +23,24 @@ import kitpath
 
 M = kitpath.port_module("menu_def")
 
-FONT_PATH = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+# The port's look (menu_def.py "look" block: fonts, colours, layout numbers,
+# controls-page leader routes) -- required, no defaults (spec §2).
+LOOK = (
+    "FONT_PATH", "F_TOP_PT", "F_ROW_PT", "F_TITLE_PT", "BG", "FG", "BLACK",
+    "AMBER", "GREY", "RED", "WHITE", "CHIP_W", "CHIP_H", "LOGO_W", "LOGO_H",
+    "LOGO_X", "LOGO_Y", "CTL_ROW_LABEL_X", "CTL_ROW_VALUE_X", "CTL_FOOTER_Y",
+    "TEXT_GAP", "COL_L", "COL_R", "SCOL_R", "PAD_PAGE", "STICK_PAGE",
+)
+globals().update({n: kitpath.port_value(M, n) for n in LOOK})
+
 assert os.path.exists(FONT_PATH), f"stock macOS font missing: {FONT_PATH}"
 
 port = kitpath.port_root()
 LOADER_DIR = os.path.join(port, "loader")
 
-BG = (224, 224, 224)          # T16 round 2: soft gray -- operator found the
-                              # splash-white (248) menu bg too bright on a TV.
-                              # No longer matches splash.png's 248 bg; the
-                              # splash->menu transition shows a small shade
-                              # step (accepted). Exactly representable in
-                              # RGB565 (224>>3<<3 == 224).
-FG = (0x10, 0x10, 0x18)       # dark navy text (the pre-white-bg BG color)
-BLACK = (0, 0, 0)
-AMBER = (0xe0, 0xa0, 0x20)    # highlight bands (black text on top)
-AMBER_TXT = (0xa8, 0x70, 0x00)  # amber as TEXT needs more contrast on white
-GREY = (0x70, 0x70, 0x70)
-RED = (0xc0, 0x38, 0x28)      # DELETE? cell fill; RED/WHITE sit on the RGB565
-WHITE = (0xf8, 0xfc, 0xf8)    # grid, so the sheet's 565 snap leaves them alone
-
-F_TOP = ImageFont.truetype(FONT_PATH, 28)      # top-menu labels
-F_ROW = ImageFont.truetype(FONT_PATH, 20)      # settings rows/footers/values
-F_TITLE = ImageFont.truetype(FONT_PATH, 24)    # titles
+F_TOP = ImageFont.truetype(FONT_PATH, F_TOP_PT)      # top-menu labels
+F_ROW = ImageFont.truetype(FONT_PATH, F_ROW_PT)      # settings rows/footers/values
+F_TITLE = ImageFont.truetype(FONT_PATH, F_TITLE_PT)  # titles
 
 
 def rgb565(rgb):
@@ -104,34 +99,6 @@ def R(rect):
     return "{%d,%d,%d,%d}" % rect
 
 
-CHIP_W, CHIP_H = 126, 24        # CTL_WORD label-chip cell ("OVERDRIVE" is 118)
-LOGO_W, LOGO_H = 424, 246       # top-menu logo rect (mockup-measured; fixed so
-LOGO_X, LOGO_Y = (640 - LOGO_W) // 2, 16   # menu_layout.h is stable even when
-                                # the gitignored logo.png is absent). Menu rows
-                                # moved to 275+ to clear it, see top_dest_y.
-CTL_ROW_LABEL_X = 48
-CTL_ROW_VALUE_X = 344
-CTL_FOOTER_Y = 452              # same line as the top/settings footers
-
-# The two controls-page label columns. chip_x is where menu.c blits the
-# function chip (== menu_def's anchor x); chips are bare function words since
-# 2026-10-03 (operator: the art itself letters every face button, so the old
-# baked "<button> --" prefixes were redundant) -- chip_x + the cell's 2px pad
-# puts the word on the column text line shared with the baked tags (inv_x).
-# lead_x is where that row's leader line leaves the label block (fixed, not
-# word-dependent: the leaders are baked, the words are not). inv_x is where
-# a baked invariant label (MOVE / START) starts.
-TEXT_GAP = 8
-COL_L = dict(chip_x=10, lead_x=192, inv_x=12)
-COL_R = dict(chip_x=456, lead_x=450, inv_x=458)
-# Stick-page right column: the centered stick art (2026-10-03) carries shell
-# ink out to x~465, past COL_R's text line, so its text line sits further
-# right -- x482 (operator: x470 hugged the shell; "OVERDRIVE" still ends at
-# 600, inside the left column's own 12px margin). Chips since the controls
-# library (2026-10-24): chip_x 480 puts the word on that same x482 line.
-SCOL_R = dict(chip_x=480, lead_x=476, inv_x=482)
-
-
 def CTL_ROW_Y(i):
     """Four rows, class-major; a 12px gap between the pad pair and the
     stick pair. Same formula as menu_layout.h's CTL_ROW_Y."""
@@ -170,100 +137,6 @@ def edit_nav(anchors, buttons):
             row.append(None if best is None else best[1])
         nav.append(row)
     return nav
-
-
-# Controls pages. The art is the operator's AI-generated device diagrams,
-# VECTORIZED (round 4, 2026-09-30): the original JPEGs' compression noise was
-# unfixable by filtering (rounds 1-2) and a from-scratch code-drawn schematic
-# lost the art's character (round 3, reverted). vtracer fits flat-color
-# splines to the original, which kills the noise by construction; the
-# committed loader/*_diagram.svg is the traced vector and *_diagram.png its
-# 1024x1024 resvg render, the generator's actual input (tools + exact flags:
-# docs/kb/tooling.md §vtracer). Per page:
-#   art_h/art_x/art_y  the scaled art's paste box -- height drives the scale,
-#                      x/y are chosen so the art clears both label columns.
-#   buttons            button -> (src_x, src_y, src_r) in ORIGINAL art pixels
-#                      (1024x1024), used to assert each leader lands on its
-#                      button and to keep the hand-routed page-space leads
-#                      honest if the art or the scale ever moves.
-#   col_r              the page's right label column (COL_R / SCOL_R); a
-#                      chip anchored at x < 320 is in COL_L.
-#   leads              button -> leader polyline in PAGE space, WITHOUT its
-#                      first point: that is always (column lead_x, row centre),
-#                      so a leader can never drift off its own label row.
-#   tags               invariant labels: (column, row centre y, text, polyline
-#                      tail). Same deal, but the leader starts just past the
-#                      baked text since there is no chip cell to leave from.
-# Routing rules the hand-picked polylines follow: orthogonal only, one elbow
-# where the art allows it, no two leaders crossing, and no leader crossing a
-# button it does not belong to (2026-10-03 re-route: corners only where a
-# straight shot is geometrically impossible).
-PAD_PAGE = dict(
-    art_h=240, art_x=203, art_y=34, col_r=COL_R,
-    buttons={"Y": (822, 345, 38), "X": (742, 426, 38),
-             "B": (897, 426, 38), "A": (822, 507, 38)},
-    leads={"LTRIG": [(230, 52), (230, 76)],         # J-drop onto the shoulder
-           "RTRIG": [(410, 52), (410, 76)],         # ledge above each trigger
-           "Y": [(404, 113)],
-           "B": [(415, 145), (415, 141)],
-           "A": [(395, 177), (395, 160)],
-           "X": [(375, 209), (375, 141)]},
-    tags=[(COL_L, 163, "MOVE",                      # forks: d-pad left arm +
-           [[(229, 163)],                           # analog ring left edge.
-            [(195, 163), (195, 115), (211, 115)]]), # Split at x195, in the BG
-          (COL_L, 205, "START", [(307, 205)])])     # clear of the shell, so it
-                                                    # reads as TWO lines (ring
-                                                    # page c(236,115) r26;
-                                                    # operator round: the old
-                                                    # split 1px before the tip
-                                                    # read as stick-only)
-# Stick page (controls library, 2026-10-24): runtime chips like the pad page.
-# The chip cells sit where the 2026-10-03 baked tags sat (menu_def
-# STICK_ANCHORS: anchor y = tag y - 12), so every tag's leader kept its route
-# -- each row sits at its button's own height and the leaders are as straight
-# as the art allows:
-#   Z/C   horizontals at the button centre heights (y83/y123), kissing the
-#         cluster's east rims (rim east points x427.7). BARRAGE's text row
-#         sits lower, y95, stepping up to y83 mid-run at x450 (operator:
-#         at y83 the label crowded SUB, whose own line cannot leave the
-#         y65 seam, and a step right at the label read badly; x450 keeps
-#         the leg's halo clear of the screw at ~(442,76), Z's rim at 428,
-#         and the shell edge verticals at 455-457/464);
-#   Y     rides the button panel's top edge line (y65 -- the corridor the
-#         old 3-corner route jogged into), one drop onto Y's crown;
-#   X     top-left row: over the dome (y30 clears the art box entirely),
-#         one drop down the canyon between the VMU (right edge x338) and
-#         the START button (left edge x361), landing on X's crown;
-#   B     new row at y148, between OVERDRIVE and ACTION. B shares C's centre
-#         height, so a straight line would cross C: the horizontal runs under
-#         C (rim bottom ~y138) and rises onto B's south rim dead under its
-#         centre -- one elbow, the same shape as A's. B's art centre
-#         (705,461) r50 was measured on stick_diagram.png (outer ring ink
-#         x655-756, y411-512);
-#   A     one elbow, its vertical rising onto A's south rim dead under the
-#         button centre (x348; operator 2026-10-03: the old logo-edge x365
-#         landed on the SE arc and read as off-centre). The horizontal at
-#         y173 clears the "Dreamcast" logo top (ink from y~180) with its
-#         halo; the vertical stays above the logo's y-range entirely;
-#   START baked tag (no function), one drop onto the button crown (centre
-#         ~(368,54) r7; the old hook cut through the vent panel's left slope).
-# art_x 131 -> 172 (2026-10-03): ink centered at x320 like the pad page's
-# (operator). Every page-space x in the routes and the measurements above
-# moved +41 with it; the right column is SCOL_R, see its comment.
-STICK_PAGE = dict(
-    art_h=224, art_x=172, art_y=34, col_r=SCOL_R,
-    buttons={"X": (605, 397, 50), "Y": (705, 327, 50), "Z": (827, 327, 50),
-             "A": (606, 524, 50), "B": (705, 461, 50), "C": (828, 461, 50)},
-    leads={"X": [(347, 30), (347, 88)],
-           "Y": [(377, 65), (377, 67)],
-           "Z": [(450, 95), (450, 83), (429, 83)],
-           "C": [(429, 123)],
-           "B": [(377, 148), (377, 138)],
-           "A": [(348, 173), (348, 157)]},
-    tags=[(COL_L, 123, "MOVE", [(230, 123)]),       # lever ball west point:
-                                                    # ball x231-261 y108-138,
-                                                    # kiss at centre height
-          (SCOL_R, 37, "START", [(368, 37), (368, 48)])])
 
 
 def label(draw, x, cy, text, anchor="lm"):

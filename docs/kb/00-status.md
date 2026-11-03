@@ -43,6 +43,13 @@ this kit from github.com/CaptainKoffski/naomi-dc-port-kit at the pin
 (`624250e`), gitignored inputs symlinked: `check gd` and `check cd` silent
 (senkosp tooling.md §Fresh clone from GitHub).
 
+Final-review fix wave (C1: the `bios_data.bin` rule, its constants, the
+blob-structure asserts and `BIOS_DATA_BASELINE` moved to the port; I2–I7,
+M8–M14: `B = build`, the `ENTRY_PC` guard, ROM paths absolutized,
+`ISOLDR_*` port values, the menu look in the port's `menu_def.py`, docs):
+the gate was re-run at the resulting pin; result and pin in senkosp
+`docs/kb/tooling.md` §Kit extraction gate — result.
+
 ## Consumers
 
 - `../senkosp2dreamcast` — first consumer and worked example: submodule

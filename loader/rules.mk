@@ -1,14 +1,20 @@
 # Loader build rules, included from the port's loader/Makefile (cwd = <port>/loader).
-# The port sets, before the include: KIT, OBJS (ordered link list), BIOS (Naomi
-# BIOS ROM), CFLAGS additions (-I flags, $(DEFS)), DAT; KOS_PIN optional.
+# The port sets, before the include: KIT, OBJS (ordered link list), CFLAGS
+# additions (-I flags, $(DEFS)), DAT; KOS_PIN optional.
 # Port inputs at their conventional places: main.c, menu_layout.h, splash.png,
 # controls_pad.png, controls_stick.png, menu_sheet.pal8, logo_strip.pal8 (here),
-# ../tools/ram-snapshot.bin, ../scripts/build_patch_table.py.
+# ../scripts/build_patch_table.py.
+# The port's Makefile provides the rule for ../build/bios_data.bin (embedded
+# here as bios_data.o): the BIOS-derived bytes the loader places, laid out as
+# the port's shim_iface.h BIOS_DATA_*_OFF names document (senkosp: Naomi BIOS
+# 0x60000 slice + kernel pieces A/B/C; Cleopatra: 0x60000 slice + 0x70 bytes
+# @0x1ffd00). The composition is per game.
 # Patch table: the port's scripts/build_patch_table.py; any further inputs its
 # generator reads, the port declares as extra prerequisites of ../build/patch_table.h.
 # Requires: KOS_BASE from the environment (source tools/kos/environ.sh).
 TARGET = loader.elf
 KOS_PIN ?= 705c8629
+$(if $(KOS_PIN),,$(error loader/rules.mk: KOS_PIN is empty))
 .PHONY: kos-pin-check
 .DEFAULT_GOAL := all
 all: ../build/1ST_READ.BIN
@@ -70,43 +76,10 @@ shim_blob.o: ../shims/build/shim.bin
 	  --redefine-sym _binary____shims_build_shim_bin_start=_shim_bin \
 	  --redefine-sym _binary____shims_build_shim_bin_end=_shim_bin_end \
 	  $< $@
-# KERNEL-SLICE pin (docs/kb/phase4-conversion.md §"Low-RAM placements — spec
-# pin P6 (KERNEL-SLICE), BLOB-CHECK", Task 5): the plan's single-dd recipe
-# does not work (a ROM offset for RAM 0x600 would be negative) -- the window
-# [0x600,0x3800) is three pieces, byte-compare verified against
-# tools/ram-snapshot.bin. Literal numbers mirror
-# ../shims/include/shim_iface.h's KERNEL_A/B/C_LEN + BIOS60000_LEN (the C
-# header is the single source of truth for the shim/loader; this Makefile
-# needs the same numbers to build bios_data.bin, and
-# shims/test/test_shim_iface.c asserts the header's own arithmetic).
-BIOS60000_OFF     = 393216   # 0x60000
-BIOS60000_LEN     = 28672    # 0x7000
-KERNEL_A_SNAP_OFF = 1536     # 0x600 in tools/ram-snapshot.bin
-KERNEL_A_LEN      = 512      # 0x200: snapshot-only (no ROM source)
-KERNEL_B_LEN      = 2048     # 0x800: zero-fill (snapshot reads all-zero here)
-KERNEL_ROM_OFF    = 2048     # 0x800: piece C ROM skip
-KERNEL_C_LEN      = 10240    # 0x2800: ROM-identical to RAM 0x1000-0x3800
-BIOS_DATA_TOTAL   = 41472    # 0xa200 = BIOS60000_LEN + KERNEL_A_LEN + KERNEL_B_LEN + KERNEL_C_LEN
-# bios_data.bin layout: [BIOS60000_LEN blob][KERNEL_A_LEN][KERNEL_B_LEN][KERNEL_C_LEN]
-# concatenated -- matches shim_iface.h's BIOS_DATA_*_OFF constants, so the
-# loader indexes by name, not by re-deriving offsets.
-# .DELETE_ON_ERROR + size check (final review, Cleopatra): dd exits 0 on
-# short/past-EOF reads, so a wrong/truncated BIOS or missing snapshot would
-# silently embed a short blob and the loader memcpys fixed lengths past its
-# end. Explicit existence check on the snapshot (gitignored, regenerable)
-# because it is NOT a normal timestamp-tracked prerequisite here (34 MB,
-# effectively static -- tracking its mtime would force a rebuild on every
-# `git checkout`); the check still fails the build with a clear message
-# rather than a short silent blob.
+# The port's Makefile provides ../build/bios_data.bin (header comment);
+# .DELETE_ON_ERROR keeps a failed recipe (its size check) from leaving a
+# short blob behind.
 .DELETE_ON_ERROR:
-../build/bios_data.bin: $(BIOS)
-	mkdir -p ../build
-	@test -f ../tools/ram-snapshot.bin || { echo "bios_data.bin: ../tools/ram-snapshot.bin missing (gitignored, regenerable -- docs/kb/tooling.md Phase 3: RAM snapshot)"; exit 1; }
-	dd if=$(BIOS) bs=1 skip=$(BIOS60000_OFF) count=$(BIOS60000_LEN) 2>/dev/null > $@
-	dd if=../tools/ram-snapshot.bin bs=1 skip=$(KERNEL_A_SNAP_OFF) count=$(KERNEL_A_LEN) 2>/dev/null >> $@
-	dd if=/dev/zero bs=1 count=$(KERNEL_B_LEN) 2>/dev/null >> $@
-	dd if=$(BIOS) bs=1 skip=$(KERNEL_ROM_OFF) count=$(KERNEL_C_LEN) 2>/dev/null >> $@
-	@test $$(stat -f%z $@) -eq $(BIOS_DATA_TOTAL) || { echo "bios_data.bin wrong size (bad BIOS/snapshot?)"; rm -f $@; exit 1; }
 # Embedded as _bios_data / _bios_data_end (C's leading-underscore prefix).
 bios_data.o: ../build/bios_data.bin
 	sh-elf-objcopy -I binary -O elf32-shl -B sh4 \

@@ -1,14 +1,15 @@
 # Shim build rules, included from the port's shims/Makefile (cwd = <port>/shims).
 # The port sets, before the include: KIT, SRCS (ordered link list -- shim.ld
 # concatenates .text* in input order, so the order IS the binary), INC (-I
-# flags), DEFS, DAT (the flat image, relative to the port root); B (default
-# build) optional.
+# flags), DEFS, DAT (the flat image, relative to the port root).
 CC = /opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
 NM = /opt/toolchains/dc/sh-elf/bin/sh-elf-nm
 OBJCOPY = /opt/toolchains/dc/sh-elf/bin/sh-elf-objcopy
 CFLAGS = -ml -m4-single-only -ffreestanding -nostdlib -Os -Wall -Wextra -fno-tree-loop-distribute-patterns $(INC)
 CFLAGS += $(DEFS)   # debug toggles, e.g. make DEFS='-DSHIM_SERIAL=1 -DSHIM_TRACE=1'
-B ?= build
+# Not ?=: an exported B once drove `make clean` to rm -rf .. (own line: a
+# trailing comment would leave spaces in the value).
+B = build
 
 .PHONY: all shim-tests clean
 # Pin the default goal: a rule the port defines ahead of its own targets (e.g.
