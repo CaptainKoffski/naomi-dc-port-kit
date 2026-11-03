@@ -66,3 +66,6 @@ the gate was re-run at the resulting pin; result and pin in senkosp
   silent): senkosp's `JVS_M`-style names and comments in `shims/src/jvs.c`
   and the other byte-pinned files (README §8, spec §11); re-pointing the
   kit sources' unqualified senkosp citations (README "Citations").
+- Next gated clean-up: move `gen_menu_assets.py`'s residual senkosp
+  assumptions (`playable` set, preview layout names, literal layout numbers;
+  README §8) into the port's `menu_def.py`.

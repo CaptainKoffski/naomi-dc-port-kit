@@ -283,6 +283,15 @@ logo). For `make cdi` also `tools/img4dc` and `tools/mkdcdisc`
   `ISOLDR_HEAP`) and the BIOS-slice Maple literals
   (`maple_allowlist.BIOS_DATA_BASELINE`) are set by the port; senkosp's
   were proven on its hardware.
+- The menu generator still carries reference-port assumptions beyond the
+  look block, in `kit/scripts/gen_menu_assets.py`: the `playable`
+  function-name set (:278-284, senkosp's MAIN/SUB/BARRAGE/ACTION/OVERDRIVE),
+  the preview layout names (:589-614, `TOURNAMENT`/`OLD`/`ARCADE`,
+  `B.O.S.S.`, `custom[7]`) and literal layout numbers (`CTL_ROW_Y`
+  :102-105; settings-screen fit :350-351; 320x36 and 288x28 cells
+  :360-435; `top_dest_y` :617; `MENU_*` positions :650-696). A port that
+  restyles or changes its function set edits the generator for now; moving
+  them into `menu_def.py` is the next gated clean-up.
 - The Maple tripwire exits non-zero on any unclassified literal: a new port
   is red until it classifies its cart's and `bios_data.bin`'s literals in
   `maple_allowlist.py`.
