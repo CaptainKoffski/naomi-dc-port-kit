@@ -1,0 +1,14 @@
+build/
+tools/
+captures/
+roms/
+bios/
+*.dat
+*.7z
+*.gdi
+*.iso
+*.chd
+__pycache__/
+.DS_Store
+._*
+.superpowers/
