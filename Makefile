@@ -7,3 +7,4 @@ test:
 	python3 scripts/test_apply_reloc.py
 	python3 scripts/test_patchgen.py
 	python3 scripts/test_eeprom_game_diff.py
+	python3 scripts/test_gdemu_deploy.py
