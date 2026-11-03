@@ -58,9 +58,10 @@ gd_sys.o: $(KIT)/shims/src/gd_sys.c ../shims/include/shim_iface.h
 # reloc_patchset.json (the 4 reloc words, single source; declared by the
 # port) -- all four must be deps or an offset/value move in one of them
 # regenerates main.o but not the table (loader patches point at stale
-# offsets; links and boots wrong, no error).
+# offsets; links and boots wrong, no error). The mechanism the port's rows
+# run on is $(KIT)/scripts/patchgen.py -- a dep for the same reason.
 ../build/patch_table.h: ../shims/build/shim.map ../scripts/build_patch_table.py \
-                        ../shims/include/shim_iface.h ../$(DAT)
+                        ../shims/include/shim_iface.h ../$(DAT) $(KIT)/scripts/patchgen.py
 	cd .. && python3 scripts/build_patch_table.py
 # shim.bin embedded as _shim_bin / _shim_bin_end (C's leading-underscore prefix;
 # raw objcopy names verified with sh-elf-nm against the ../shims/build/shim.bin path).
