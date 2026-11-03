@@ -1,7 +1,8 @@
 # Shim build rules, included from the port's shims/Makefile (cwd = <port>/shims).
 # The port sets, before the include: KIT, SRCS (ordered link list -- shim.ld
 # concatenates .text* in input order, so the order IS the binary), INC (-I
-# flags), DEFS; B (default build) optional.
+# flags), DEFS, DAT (the flat image, relative to the port root); B (default
+# build) optional.
 CC = /opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
 NM = /opt/toolchains/dc/sh-elf/bin/sh-elf-nm
 OBJCOPY = /opt/toolchains/dc/sh-elf/bin/sh-elf-objcopy
@@ -30,5 +31,14 @@ $(B)/shim.bin: $(B)/shim.elf
 	$(OBJCOPY) -O binary $< $@
 $(B)/shim.map: $(B)/shim.elf
 	$(NM) $< > $@
+# MIE reply blobs: GENERATED at build time by $(KIT)/scripts/gen_mie_blobs.py
+# from committed constants (Flycast emulator output, cited) + the builder's own
+# ../$(DAT) header + the port's scripts/menu_def.py defaults -- no capture
+# needed. Never committed: mie_sub03 carries the ROM's game ID. Spec
+# docs/superpowers/specs/2026-10-04-mie-blobs-generator-design.md. The port
+# adds its own inputs (menu_def.py, port_def.py, shim_iface.h) as prerequisites.
+$(B)/mie_blobs.c: $(KIT)/scripts/gen_mie_blobs.py $(KIT)/scripts/eeprom_game_diff.py ../$(DAT)
+	mkdir -p $(B)
+	cd .. && python3 $(KIT)/scripts/gen_mie_blobs.py --dat $(DAT) --out shims/$(B)
 clean:
 	rm -rf $(B)

@@ -118,10 +118,10 @@ bios_data.o: ../build/bios_data.bin
 # splash.png is gitignored (BIOS-rendered output, same category as the BIOS
 # ROM) -- regenerate with scripts/capture_naomi_splash.sh if ever missing.
 # sips is stock macOS; converter is stdlib-only.
-../build/splash.bin: splash.png ../scripts/bmp2rgb565.py
+../build/splash.bin: splash.png $(KIT)/scripts/bmp2rgb565.py
 	mkdir -p ../build
 	sips -s format bmp splash.png --out ../build/splash.bmp > /dev/null
-	python3 ../scripts/bmp2rgb565.py ../build/splash.bmp $@
+	python3 $(KIT)/scripts/bmp2rgb565.py ../build/splash.bmp $@
 splash_blob.o: ../build/splash.bin
 	sh-elf-objcopy -I binary -O elf32-shl -B sh4 \
 	  --redefine-sym _binary____build_splash_bin_start=_splash_bin \
@@ -141,19 +141,19 @@ menu_sheet_blob.o: menu_sheet.pal8
 	  $< $@
 # Two controls pages (HKT-7700 pad / HKT-7300 stick); the menu blits the
 # label chips from menu_sheet on top of whichever page is showing.
-../build/ctl_pad.bin: controls_pad.png ../scripts/bmp2rgb565.py
+../build/ctl_pad.bin: controls_pad.png $(KIT)/scripts/bmp2rgb565.py
 	mkdir -p ../build
 	sips -s format bmp controls_pad.png --out ../build/ctl_pad.bmp > /dev/null
-	python3 ../scripts/bmp2rgb565.py ../build/ctl_pad.bmp $@ 640 480
+	python3 $(KIT)/scripts/bmp2rgb565.py ../build/ctl_pad.bmp $@ 640 480
 ctl_pad_blob.o: ../build/ctl_pad.bin
 	sh-elf-objcopy -I binary -O elf32-shl -B sh4 \
 	  --redefine-sym _binary____build_ctl_pad_bin_start=_ctl_pad_bin \
 	  --redefine-sym _binary____build_ctl_pad_bin_end=_ctl_pad_bin_end \
 	  $< $@
-../build/ctl_stick.bin: controls_stick.png ../scripts/bmp2rgb565.py
+../build/ctl_stick.bin: controls_stick.png $(KIT)/scripts/bmp2rgb565.py
 	mkdir -p ../build
 	sips -s format bmp controls_stick.png --out ../build/ctl_stick.bmp > /dev/null
-	python3 ../scripts/bmp2rgb565.py ../build/ctl_stick.bmp $@ 640 480
+	python3 $(KIT)/scripts/bmp2rgb565.py ../build/ctl_stick.bmp $@ 640 480
 ctl_stick_blob.o: ../build/ctl_stick.bin
 	sh-elf-objcopy -I binary -O elf32-shl -B sh4 \
 	  --redefine-sym _binary____build_ctl_stick_bin_start=_ctl_stick_bin \
