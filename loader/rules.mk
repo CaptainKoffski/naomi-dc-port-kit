@@ -4,6 +4,8 @@
 # Port inputs at their conventional places: main.c, menu_layout.h, splash.png,
 # controls_pad.png, controls_stick.png, menu_sheet.pal8, logo_strip.pal8 (here),
 # ../tools/ram-snapshot.bin, ../scripts/build_patch_table.py.
+# Patch table: the port's scripts/build_patch_table.py; any further inputs its
+# generator reads, the port declares as extra prerequisites of ../build/patch_table.h.
 # Requires: KOS_BASE from the environment (source tools/kos/environ.sh).
 TARGET = loader.elf
 KOS_PIN ?= 705c8629
@@ -53,12 +55,12 @@ gd_sys.o: $(KIT)/shims/src/gd_sys.c ../shims/include/shim_iface.h
 # does). The generator ALSO reads shim_iface.h (mirror offsets), ../$(DAT)
 # (the old-byte verify source -- NOT boot.bin, task-9-brief.md: entries span
 # both images and dat_offset is uniformly a raw .dat offset) and
-# reloc_patchset.json (the 4 reloc words, single source) -- all four must be
-# deps or an offset/value move in one of them regenerates main.o but not the
-# table (loader patches point at stale offsets; links and boots wrong, no error).
+# reloc_patchset.json (the 4 reloc words, single source; declared by the
+# port) -- all four must be deps or an offset/value move in one of them
+# regenerates main.o but not the table (loader patches point at stale
+# offsets; links and boots wrong, no error).
 ../build/patch_table.h: ../shims/build/shim.map ../scripts/build_patch_table.py \
-                        ../shims/include/shim_iface.h ../$(DAT) \
-                        ../scripts/reloc_patchset.json
+                        ../shims/include/shim_iface.h ../$(DAT)
 	cd .. && python3 scripts/build_patch_table.py
 # shim.bin embedded as _shim_bin / _shim_bin_end (C's leading-underscore prefix;
 # raw objcopy names verified with sh-elf-nm against the ../shims/build/shim.bin path).
