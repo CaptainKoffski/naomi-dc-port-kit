@@ -23,7 +23,7 @@ kit to ship).
 
 - **New public repo**, not a directory in the umbrella. Created 2026-11-03,
   empty, remote wired.
-- **Extraction base = senkosp `main` at `afab5844206abe2c2f845465892ebc5ecb16aa0`**
+- **Extraction base = senkosp `main` at `afab5844206abe3c2cf845465892ebc5ecb16aa0`**
   (short `afab584`), extracted now. The in-progress VMU-persistence branch
   (`feat/vmu-persistence`, operator legs pending) is excluded; it rebases
   onto the kit layout after this ships. The charter fixed the base rule; the

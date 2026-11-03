@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Two repos: this kit (`/Users/captainkoffski/AntigravityProjects/naomi-dc-port-kit`, work on branch `extraction` from `main`) and senkosp (`/Users/captainkoffski/AntigravityProjects/senkosp2dreamcast`, work on branch `kit-extraction` created from `afab5844206abe2c2f845465892ebc5ecb16aa0`). Never touch senkosp's `feat/vmu-persistence` or `main`.
+- Two repos: this kit (`/Users/captainkoffski/AntigravityProjects/naomi-dc-port-kit`, work on branch `extraction` from `main`) and senkosp (`/Users/captainkoffski/AntigravityProjects/senkosp2dreamcast`, work on branch `kit-extraction` created from `afab5844206abe3c2cf845465892ebc5ecb16aa0`). Never touch senkosp's `feat/vmu-persistence` or `main`.
 - Extraction source is `git show afab584:<path>` in senkosp, never the working tree of another branch.
 - A C or assembler file that feeds a gate artifact moves with identical content (`git show afab584:<path> | cmp - <kit path>` must be silent). Scripts and tests may change only to take paths and per-game values from the port.
 - Shim link order, exactly: `main.c(port) scif.c(kit) util.c(port) gd.c(kit) gd_sys.c(kit) gd_testsrv.c(kit) cart.c(port) maple.c(kit) jvs.c(kit) mtramp.S(port) gdstack.S(kit) build/mie_blobs.c(generated) handoff.S(kit)`. Loader object order, exactly: `main.o handoff.o gd.o gd_sys.o shim_blob.o bios_data.o splash_blob.o naomi_crc.o menu.o ctl_lib.o menu_sheet_blob.o ctl_pad_blob.o ctl_stick_blob.o logo_blob.o`.
@@ -51,7 +51,7 @@
 ```bash
 cd /Users/captainkoffski/AntigravityProjects/senkosp2dreamcast
 git status --porcelain            # must be empty
-git checkout -b kit-extraction afab5844206abe2c2f845465892ebc5ecb16aa0
+git checkout -b kit-extraction afab5844206abe3c2cf845465892ebc5ecb16aa0
 ```
 
 - [ ] **Step 2: Confirm the gitignored inputs are present**
